@@ -145,13 +145,11 @@ def verify_liveness(frames, reference):
 
     for frame in frames:
         result = DeepFace.verify(
-            img1_path=reference,
-            img2_path=frame,
-            model_name="ArcFace",
-            detector_backend="retinaface",
-            enforce_detection=True
-        )
-
+    reference,
+    frame,
+    model_name="ArcFace",
+    enforce_detection=False
+)
         distances.append(float(result["distance"]))
 
         ear = get_ear(frame)

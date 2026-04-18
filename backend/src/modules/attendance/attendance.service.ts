@@ -3,7 +3,6 @@ import { PrismaService } from '../../database/prisma.service';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
-import fetch from 'node-fetch';
 
 @Injectable()
 export class AttendanceService {
@@ -155,31 +154,46 @@ console.log('📥 Incoming Data:', {
 
       const referencePath = path.resolve(student.faceImage);
 
-      const liveVerified = await this.verifyLiveness(
-        framePaths,
-        referencePath
-      );
+     // 1. Create attendance instantly
+const attendance = await this.prisma.attendance.create({
+  data: {
+    student: { connect: { id: studentId } },
+    checkIn: new Date(),
+    checkOut: new Date(Date.now() + 2 * 60 * 60 * 1000),
+   verified: false,
+    course: courseName || 'UNKNOWN',
+    courseCode: courseCode || 'UNKNOWN',
+    college: college || 'UNKNOWN',
+    department: department || 'UNKNOWN',
+  },
+});
 
-      if (!liveVerified) {
-        throw new Error('Liveness check failed');
-      }
-
-      return this.prisma.attendance.create({
+// 2. Run verification in background (DON’T await)
+this.verifyLiveness(framePaths, referencePath)
+  .then(async (isLive) => {
+    if (isLive) {
+      await this.prisma.attendance.update({
+        where: { id: attendance.id },
         data: {
-          student: {
-            connect: { id: studentId },
-          },
-          checkIn: new Date(),
-          checkOut: new Date(Date.now() + 2 * 60 * 60 * 1000),
           verified: true,
-
-          // ✅ 🔥 REAL FIX HERE
-          course: courseName || 'UNKNOWN',
-          courseCode: courseCode || 'UNKNOWN',
-          college: college || 'UNKNOWN',
-          department: department || 'UNKNOWN',
         },
       });
+    } else {
+      await this.prisma.attendance.delete({
+        where: { id: attendance.id },
+      });
+
+      console.log('❌ Attendance deleted (failed verification)');
+    }
+  })
+  .catch((err) =>
+    console.error('Background liveness error:', err),
+  );
+
+// 3. Return immediately
+return attendance;
+
+      
     }
 
     // =========================
@@ -203,7 +217,7 @@ console.log('📥 Incoming Data:', {
             connect: { id: studentId },
           },
           checkIn: new Date(),
-          verified: true,
+         verified: false,
 
           // ✅ 🔥 REAL FIX HERE TOO
           course: courseName || 'UNKNOWN',
@@ -218,36 +232,50 @@ console.log('📥 Incoming Data:', {
   }
 
   async verifyLiveness(frames: string[], reference: string): Promise<boolean> {
-    try {
-      const response = await fetch('http://localhost:5001/liveness', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frames, reference }),
-      });
+  try {
+    const response = await fetch('http://face-service:5001/liveness', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frames, reference }),
+    });
 
-      const data: any = await response.json();
-      return data?.verified === true;
-    } catch (error) {
-      console.error('Liveness failed:', error);
-      return false;
-    }
+    const data: any = await response.json();
+
+    console.log('🔥 FACE SERVICE RESPONSE:', data);
+
+    const score =
+      data?.liveness ||
+      data?.confidence ||
+      (data?.verified ? 1 : 0);
+
+    return score >= 0.5;
+  } catch (error) {
+    console.error('Liveness failed:', error);
+    return false;
   }
+}
 
-  async compareFaces(image1: string, image2: string): Promise<boolean> {
-    try {
-      const response = await fetch('http://localhost:5001/compare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image1, image2 }),
-      });
+ async compareFaces(image1: string, image2: string): Promise<boolean> {
+  try {
+    const response = await fetch('http://face-service:5001/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image1, image2 }),
+    });
 
-      const data: any = await response.json();
-      return data?.verified === true;
-    } catch (error) {
-      console.error('Face comparison failed:', error);
-      return false;
-    }
+    const data: any = await response.json();
+
+    console.log("Face result:", data);
+
+    const distance = data?.distance ?? 1;
+
+    return distance < 0.7;
+
+  } catch (error) {
+    console.error('Face comparison failed:', error);
+    return false;
   }
+}
 
   async registerFace(studentId: string, faceImage: string) {
     const student = await this.prisma.student.findUnique({
