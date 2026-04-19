@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { Response } from 'express';
+import * as XLSX from 'xlsx';
 
 @Controller('attendance')
 export class AttendanceController {
@@ -61,9 +62,25 @@ export class AttendanceController {
   }
 
   // ✅ EXPORT EXCEL
-  @Get('export')
-  async exportExcel(@Res() res: Response) {
-    const filePath = await this.attendanceService.exportToExcel();
-    return res.download(filePath);
-  }
+@Get('export')
+async exportExcel(@Res() res: Response) {
+  const workbook = await this.attendanceService.exportToExcel() as unknown as XLSX.WorkBook;
+
+  const buffer = XLSX.write(workbook, {
+    type: 'buffer',
+    bookType: 'xlsx',
+  });
+
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename=attendance.xlsx'
+  );
+
+  res.end(buffer);
+}
 }

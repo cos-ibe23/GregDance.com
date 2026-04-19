@@ -5,11 +5,10 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "3000:3000"
+    restart: always
     depends_on:
-      face-service:
-        condition: service_healthy
-      db:
-        condition: service_healthy
+     - face-service
+     - db
     volumes:
       - faces:/app/faces   
 
@@ -21,9 +20,9 @@ services:
       - faces:/app/faces  
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/"]
-      interval: 5s
-      timeout: 2s
-      retries: 5
+      interval: 10s
+      timeout: 5s
+      retries: 10
       start_period: 300s
 
   db:

@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
 
+
 @Injectable()
 export class AttendanceService {
   constructor(private prisma: PrismaService) {}
@@ -217,7 +218,7 @@ return attendance;
             connect: { id: studentId },
           },
           checkIn: new Date(),
-         verified: false,
+         verified: verified,
 
           // ✅ 🔥 REAL FIX HERE TOO
           course: courseName || 'UNKNOWN',
@@ -335,9 +336,9 @@ return attendance;
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
 
-    const filePath = 'attendance.xlsx';
-    XLSX.writeFile(workbook, filePath);
+    const filePath = path.join(process.cwd(), 'attendance.xlsx');
+    
 
-    return filePath;
+    return workbook;
   }
 }
