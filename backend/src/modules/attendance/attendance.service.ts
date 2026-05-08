@@ -3,7 +3,9 @@ import { PrismaService } from '../../database/prisma.service';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
-
+import { Cron } from '@nestjs/schedule';
+import * as crypto from 'crypto';
+(global as any).crypto = crypto; 
 
 @Injectable()
 export class AttendanceService {
@@ -322,6 +324,8 @@ return attendance;
       orderBy: { checkIn: 'desc' },
     });
 
+
+    
     const data = records.map((r: any) => ({
       Name: r.student?.name ?? '',
       MatricNo: r.student?.matricNo ?? '',
@@ -335,10 +339,28 @@ return attendance;
     const workbook = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
-
-    const filePath = path.join(process.cwd(), 'attendance.xlsx');
     
 
     return workbook;
   }
+
+  @Cron('*/30 * * * * *') // every 30 seconds
+async autoCheckout() {
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  await this.prisma.attendance.updateMany({
+    where: {
+      checkOut: null,
+      checkIn: {
+        lte: twoHoursAgo,
+      },
+    },
+    data: {
+      checkOut: new Date(),
+    },
+  });
+
+  console.log('✅ Auto checkout executed');
+}
+
 }

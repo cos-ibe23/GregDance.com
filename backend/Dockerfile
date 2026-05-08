@@ -1,15 +1,16 @@
-# ---------- FRONTEND BUILD ----------
+# ========= FRONTEND BUILD =========
 FROM node:18 AS frontend-build
 
-WORKDIR /app/frontend
+WORKDIR /frontend
+
 COPY frontend/package*.json ./
 RUN npm install
 
-COPY frontend ./
+COPY frontend/ ./
 RUN npm run build
 
 
-# ---------- BACKEND ----------
+# ========= BACKEND =========
 FROM node:18
 
 WORKDIR /app
@@ -17,13 +18,14 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install
 
+COPY backend/ ./
 
-COPY backend ./
 RUN npx prisma generate
+RUN npm run build
 
-# ✅ Copy built frontend into backend
-COPY --from=frontend-build /app/frontend/build ./public
+# Copy React build into NestJS public folder
+COPY --from=frontend-build /frontend/build ./public
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["sh", "-c", "sleep 10 && npx prisma migrate deploy && npm run start"]

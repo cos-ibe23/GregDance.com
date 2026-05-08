@@ -3,7 +3,9 @@ import { Controller, Get } from '@nestjs/common';
 @Controller()
 export class AppController {
   @Get()
-  home() {
-    return { message: 'API is running 🚀' };
+  getHome() {
+    return {
+      message: 'GregDance Backend Running 🚀',
+    };
   }
 }

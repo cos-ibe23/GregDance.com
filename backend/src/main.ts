@@ -18,16 +18,12 @@ async function bootstrap() {
   app.enableCors();
 // ✅ SERVE REACT BUILD
 const server = app.getHttpAdapter().getInstance();
-server.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ✅ SPA FALLBACK (React routing)
-server.get('*', (req: express.Request, res: express.Response) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
 
-  await app.listen(3000);
+  await app.listen(3001);
 
-  console.log('🚀 Server running on http://localhost:3000');
+  console.log('🚀 Server running on http://localhost:3001');
 
   process.on('unhandledRejection', (err) => {
     console.error('UNHANDLED ERROR:', err);

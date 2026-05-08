@@ -5,17 +5,9 @@ import { AppController } from './app.controller';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { PrismaService } from './database/prisma.service';
 import { DatabaseModule } from './database/database.module';
-import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [
-    AuthModule,
-    DatabaseModule,
-    UsersModule,
-    AttendanceModule,
-    ScheduleModule.forRoot(),
-  ],
-  controllers: [AppController],
+  imports: [AuthModule, DatabaseModule, UsersModule, AttendanceModule],
   providers: [PrismaService],
   exports: [PrismaService],
 })

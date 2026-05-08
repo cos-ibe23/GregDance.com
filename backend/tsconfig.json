@@ -2,12 +2,19 @@
   "compilerOptions": {
     "lib": ["ES2021", "DOM"],
     "module": "commonjs",
+    "declaration": false,
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true,
     "target": "es2017",
     "strict": true,
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "skipLibCheck": true,
-    "outDir": "./dist"
-  }
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/*/"]
 }

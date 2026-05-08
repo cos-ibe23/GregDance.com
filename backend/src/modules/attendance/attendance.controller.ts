@@ -64,7 +64,7 @@ export class AttendanceController {
   // ✅ EXPORT EXCEL
 @Get('export')
 async exportExcel(@Res() res: Response) {
-  const workbook = await this.attendanceService.exportToExcel() as unknown as XLSX.WorkBook;
+  const workbook = await this.attendanceService.exportToExcel();
 
   const buffer = XLSX.write(workbook, {
     type: 'buffer',
@@ -73,12 +73,12 @@ async exportExcel(@Res() res: Response) {
 
   res.setHeader(
     'Content-Type',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   );
 
   res.setHeader(
     'Content-Disposition',
-    'attachment; filename=attendance.xlsx'
+    'attachment; filename=attendance.xlsx',
   );
 
   res.end(buffer);
